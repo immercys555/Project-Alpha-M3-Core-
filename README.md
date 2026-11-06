@@ -55,3 +55,27 @@ decision_output = operator.evaluate(
 )
 
 print(f"Optimal Workflow Action: {decision_output.recommended_action}")
+
+
+---
+
+## Architectural Feasibility: Sparsity Constraints & Dynamic Synaptic Plasticity
+
+To guarantee **O(N)** linear efficiency while preserving backpropagation dynamics during localized feature absorption, the M3 architecture incorporates a dynamic synaptic topology matrix **S_ij(t)** governed by a strict zero-norm bound:
+
+`||S_ij(t)||_0 <= k * N` *(where k << N)*
+
+### Differentiability via Straight-Through Estimator (STE)
+
+Discrete index selection (e.g., Top-k pruning) inherently induces zero-gradient propagation for inactive pathways. To bypass discrete gradient blockages and enable continuous synaptic re-growth, M3 integrates a custom Straight-Through Estimator (STE) proxy:
+
+`S_t = STE_TopK(W, k)`
+
+*   **Forward Pass**: Enforces sparse tensor execution by applying a binary Top-K mask.
+*   **Backward Pass**: Bypasses discrete mask gradients, passing gradients directly back to the dense parameter matrix **W**. This allows dormant connections to reactivate based on dynamic sensory loss.
+
+### Hardware Compatibility & PyTorch Limitations
+
+This hardware-aware formulation targets native execution on neuromorphic architectures (e.g., Intel Loihi, BrainChip) and edge NPU accelerators.
+
+> **Engineering Caveat:** In this PyTorch implementation, the sparse mask generation uses `torch.zeros_like(W)`, which still allocates a dense VRAM footprint (O(N²) memory). This is a high-level executable proxy. True physical O(N) memory savings require a custom Triton or CUDA kernel with block-sparse memory allocation.
